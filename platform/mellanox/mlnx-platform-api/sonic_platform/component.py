@@ -30,6 +30,7 @@ try:
     import glob
     import tempfile
     import subprocess
+    import traceback
     from sonic_py_common import device_info
     from sonic_py_common.logger import Logger
     from sonic_py_common.general import check_output_pipe
@@ -912,6 +913,66 @@ class ComponentCPLDSN2201(ComponentCPLD):
             return False
 
         return True
+
+
+class ComponentBMCObj(Component):
+
+    def __init__(self, name, attrs):
+        super(Component, self).__init__()
+
+        from .bmc import BMC
+
+        self.bmc = BMC.get_instance()
+        self.name = name
+        self.type_name = ''
+        self.fw_id = attrs.get('id', '')
+        self.eeprom_id = attrs.get('eeprom_id', None)
+
+    def get_firmware_id(self):
+        return self.fw_id
+
+    def get_eeprom_id(self):
+        return self.eeprom_id
+
+    def install_firmware(self, image_path):
+        if not self._check_file_validity(image_path):
+            print(f"Invalid firmware image path: {image_path}")
+            return False
+        print('Starting BMC firmware update, path={}'.format(image_path))
+        ret = 0
+        error_msg = ''
+        try:
+            ret, error_msg = self.bmc.update_firmware(image_path)
+            if ret != 0:
+                print(f'Fail to update BMC firmware. Error {ret}: {error_msg}')
+                return False
+            print('Successfully updated BMC firmware, restarting BMC...')
+            ret, error_msg = self.bmc._request_bmc_reset()
+            if ret != 0:
+                print(f'Failed to restart BMC. Error {ret}: {error_msg}')
+                return False
+            return True
+        except Exception as e:
+            error_trace = traceback.format_exc()
+            print(str(e))
+            print(error_trace)
+            raise
+
+    def get_firmware_version(self):
+        return self.bmc.get_version()
+
+
+class ComponentBMC(ComponentBMCObj):
+    COMPONENT_NAME = 'BMC'
+    COMPONENT_DESCRIPTION = 'BMC - Baseboard Management Controller'
+    COMPONENT_FIRMWARE_EXTENSION = ['.fwpkg']
+
+    def __init__(self, name, attrs):
+        super(ComponentBMC, self).__init__(name, attrs)
+
+        self.type_name = self.COMPONENT_NAME
+        self.description = self.COMPONENT_DESCRIPTION
+        self.image_ext_name = self.COMPONENT_FIRMWARE_EXTENSION
 
 class ComponentCPLDSN4280(ComponentCPLD):
     CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--gpio', '--print-progress', '']
