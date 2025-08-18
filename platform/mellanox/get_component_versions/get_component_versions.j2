@@ -132,6 +132,19 @@ def get_platform_component_versions():
     return platform_versions
 
 
+def extract_sai_api_version(version_output):
+    """Extract SAI API version from multiline header content."""
+    major_match = re.search(r'SAI_MAJOR\s+(\d+)', version_output)
+    minor_match = re.search(r'SAI_MINOR\s+(\d+)', version_output)
+    revision_match = re.search(r'SAI_REVISION\s+(\d+)', version_output)
+    if major_match and minor_match and revision_match:
+        major = major_match.group(1)
+        minor = minor_match.group(1)
+        revision = revision_match.group(1)
+        return f"{major}.{minor}.{revision}"
+    return "N/A"
+
+
 def get_current_version(comp):
     version = ""
     try:
@@ -142,6 +155,9 @@ def get_current_version(comp):
         #If there are two commands and we need a pipe
         elif len(COMMANDS_FOR_ACTUAL[comp]) == 3:
             version = check_output_pipe(COMMANDS_FOR_ACTUAL[comp][0], COMMANDS_FOR_ACTUAL[comp][1])
+        # Special handling for SAI_API_HEADERS to extract from multiline output
+        if comp == "SAI_API_HEADERS":
+            return extract_sai_api_version(version)
         parsed_version = re.search(COMMANDS_FOR_ACTUAL[comp][-1], version)
         return parsed_version.group(1) if parsed_version else "N/A"
     except Exception:
