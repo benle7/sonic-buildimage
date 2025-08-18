@@ -150,7 +150,7 @@ def get_current_version(comp):
     version = ""
     try:
         # If there's only one command
-        if len(COMMANDS_FOR_ACTUAL[comp]) == 2 || comp == "SAI_API_HEADERS":
+        if len(COMMANDS_FOR_ACTUAL[comp]) == 2 or comp == "SAI_API_HEADERS":
             version = subprocess.run(COMMANDS_FOR_ACTUAL[comp][0], shell=False, stdout=subprocess.PIPE, text=True)
             version = str(version.stdout)
         #If there are two commands and we need a pipe
