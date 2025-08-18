@@ -32,6 +32,7 @@ from tabulate import tabulate
 
 COMPONENT_VERSIONS_FILE = "/etc/mlnx/component-versions"
 HEADERS = ["COMPONENT", "COMPILATION", "ACTUAL"]
+SAI_API_TABLE_HEADERS = ["COMPONENT", "SONIC", "SAI"]
 
 {% if sonic_asic_platform == "mellanox" %}
 
@@ -164,8 +165,8 @@ def get_current_version(comp):
         return "N/A"
 
 
-def format_output_table(table):
-    return tabulate(table, HEADERS)
+def format_output_table(table, headers=HEADERS):
+    return tabulate(table, headers)
 
 
 def main():
@@ -176,6 +177,14 @@ def main():
 
     compiled_versions = parse_compiled_components_file()
     simx_compiled_ver = compiled_versions.pop("SIMX")
+
+    # Handle SAI_API_HEADERS versions
+    sai_api_headers_table = []
+    if "SAI_API_HEADERS" in compiled_versions:
+        sai_api_version_in_sai = get_current_version("SAI_API_HEADERS")
+        sai_api_version_in_sonic = compiled_versions["SAI_API_HEADERS"]
+        sai_api_headers_table.append(["SAI_API_HEADERS", sai_api_version_in_sonic, sai_api_version_in_sai])
+        compiled_versions.pop("SAI_API_HEADERS")
 
     # Add compiled versions to table
     output_table = []
@@ -196,6 +205,11 @@ def main():
         output_table.append([comp, "-", platform_versions[comp]])
 
     print(format_output_table(output_table))
+
+    # Print SAI API Headers table separately
+    if sai_api_headers_table:
+        print("\n")
+        print(format_output_table(sai_api_headers_table, SAI_API_TABLE_HEADERS))
 
 
 if __name__ == "__main__":
