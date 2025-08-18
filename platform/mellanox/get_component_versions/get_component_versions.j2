@@ -41,7 +41,7 @@ COMMANDS_FOR_ACTUAL = {
     "HW_MANAGEMENT": [["dpkg", "-l"], ["grep", "hw"], ".*1\\.mlnx\\.([0-9.]*)"],
     "SDK": [["docker", "exec", "-it", "syncd", "bash", "-c", 'dpkg -l | grep sdk'], ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": [["docker", "exec", "-it", "syncd", "bash", "-c", 'dpkg -l | grep mlnx-sai'], ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
-    "SAI_API_HEADERS": [["docker", "exec", "-it", "syncd", "bash", "-c", 'grep -E "SAI_MAJOR|SAI_MINOR|SAI_REVISION" /usr/include/sai/saiversion.h'], "SAI_MAJOR\\s+(\\d+).*SAI_MINOR\\s+(\\d+).*SAI_REVISION\\s+(\\d+)"],
+    "SAI_API_HEADERS": [["docker", "exec", "-it", "syncd", "bash", "-c", 'grep -E "SAI_MAJOR|SAI_MINOR|SAI_REVISION" /usr/include/sai/saiversion.h']],
     "FW": [["mlxfwmanager", "--query"], "FW * [0-9]{2}\\.([0-9.]*)"],
     "KERNEL": [["uname", "-r"], "([0-9][0-9.-]*)-.*"]
 }
@@ -150,7 +150,7 @@ def get_current_version(comp):
     version = ""
     try:
         # If there's only one command
-        if len(COMMANDS_FOR_ACTUAL[comp]) == 2:
+        if len(COMMANDS_FOR_ACTUAL[comp]) == 2 || comp == "SAI_API_HEADERS":
             version = subprocess.run(COMMANDS_FOR_ACTUAL[comp][0], shell=False, stdout=subprocess.PIPE, text=True)
             version = str(version.stdout)
         #If there are two commands and we need a pipe
