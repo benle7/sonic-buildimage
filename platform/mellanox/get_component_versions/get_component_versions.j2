@@ -41,7 +41,7 @@ COMMANDS_FOR_ACTUAL = {
     "HW_MANAGEMENT": [["dpkg", "-l"], ["grep", "hw"], ".*1\\.mlnx\\.([0-9.]*)"],
     "SDK": [["docker", "exec", "-it", "syncd", "bash", "-c", 'dpkg -l | grep sdk'], ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": [["docker", "exec", "-it", "syncd", "bash", "-c", 'dpkg -l | grep mlnx-sai'], ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
-    "SAI_API_HEADERS": [["docker", "exec", "-it", "syncd", "bash", "-c", 'grep -E "SAI_MAJOR|SAI_MINOR|SAI_REVISION" /usr/include/sai/saiversion.h']],
+    "SAI_API_HEADERS": [["docker", "exec", "-it", "syncd", "saidiscovery", "--queryApiVersion"]],
     "FW": [["mlxfwmanager", "--query"], "FW * [0-9]{2}\\.([0-9.]*)"],
     "KERNEL": [["uname", "-r"], "([0-9][0-9.-]*)-.*"]
 }
@@ -134,16 +134,15 @@ def get_platform_component_versions():
 
 
 def extract_sai_api_version(version_output):
-    """Extract SAI API version from multiline header content."""
-    major_match = re.search(r'SAI_MAJOR\s+(\d+)', version_output)
-    minor_match = re.search(r'SAI_MINOR\s+(\d+)', version_output)
-    revision_match = re.search(r'SAI_REVISION\s+(\d+)', version_output)
-    if major_match and minor_match and revision_match:
-        major = major_match.group(1)
-        minor = minor_match.group(1)
-        revision = revision_match.group(1)
+    """Extract SAI API version from saidiscovery output and format as major.minor.revision."""
+    try:
+        version_int = int(version_output.strip())
+        major = version_int // 10000
+        minor = (version_int % 10000) // 100
+        revision = version_int % 100
         return f"{major}.{minor}.{revision}"
-    return "N/A"
+    except Exception:
+        return "N/A"
 
 
 def get_current_version(comp):
