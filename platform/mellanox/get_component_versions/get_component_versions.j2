@@ -136,7 +136,17 @@ def get_platform_component_versions():
 def extract_sai_api_version(version_output):
     """Extract SAI API version from saidiscovery output and format as major.minor.revision."""
     try:
-        version_int = int(version_output.strip())
+        lines = reversed(version_output.strip().split('\n'))
+        version_int = None
+        for line in lines:
+            line = line.strip()
+            if line.startswith("SAI_API_VERSION:"):
+                version_str = line.split(":", 1)[1].strip()
+                version_int = int(version_str)
+                break
+        if version_int is None:
+            return "N/A"
+        
         major = version_int // 10000
         minor = (version_int % 10000) // 100
         revision = version_int % 100
