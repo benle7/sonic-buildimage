@@ -119,6 +119,12 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get updat
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install efitools
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install mokutil
 
+# Install tpm-tools to support remote attestation
+sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install tpm2-tools
+
+# Install Python module for tqdm
+sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install tqdm
+
 # Apply environtment configuration files
 sudo cp $IMAGE_CONFIGS/environment/environment $FILESYSTEM_ROOT/etc/
 sudo cp $IMAGE_CONFIGS/environment/motd $FILESYSTEM_ROOT/etc/
