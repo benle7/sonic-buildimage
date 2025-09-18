@@ -584,13 +584,15 @@ class TestComponent:
     @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.component.ComponentBMC._check_file_validity', \
                 mock.MagicMock(return_value=True))
+    @mock.patch('sonic_platform.bmc.BMC._get_id')
     @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_request_bmc_reset')
     @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_update_firmware')
     @mock.patch('sonic_platform.redfish_client.RedfishClient.login')
-    def test_bmc_update_firmware(self, mock_login, mock_update_fw, mock_bmc_reset):
+    def test_bmc_update_firmware(self, mock_login, mock_update_fw, mock_bmc_reset, mock_get_id):
         mock_login.return_value = RedfishClient.ERR_CODE_OK
         mock_update_fw.return_value = (RedfishClient.ERR_CODE_OK, '')
         mock_bmc_reset.return_value = (RedfishClient.ERR_CODE_OK, '')
+        mock_get_id.return_value = 'MGX_FW_BMC_0'
         attrs = {
             'id': 'MGX_FW_BMC_0',
             'eeprom_id': 'BMC_eeprom'

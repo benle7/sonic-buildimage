@@ -141,16 +141,18 @@ class TestBMC:
     @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.component.ComponentBMC._check_file_validity', \
                 mock.MagicMock(return_value=True))
+    @mock.patch('sonic_platform.bmc.BMC._get_id')
     @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_update_firmware')
     @mock.patch('sonic_platform.redfish_client.RedfishClient.login')
-    def test_bmc_update_firmware(self, mock_login, mock_update_fw):
+    def test_bmc_update_firmware(self, mock_login, mock_update_fw, mock_get_id):
         """Test update_firmware method with successful update without force"""
         mock_login.return_value = RedfishClient.ERR_CODE_OK
         mock_update_fw.return_value = (RedfishClient.ERR_CODE_OK, 'Update successful')
+        mock_get_id.return_value = 'MGX_FW_BMC_0'
 
         bmc = BMC.get_instance()
         ret, msg = bmc.update_firmware('fake_image.fwpkg')
 
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Update successful'
-        mock_update_fw.assert_called_once_with('fake_image.fwpkg', None, False, 1800, None)
+        mock_update_fw.assert_called_once_with('fake_image.fwpkg', ['MGX_FW_BMC_0'], False, 1800, None)
