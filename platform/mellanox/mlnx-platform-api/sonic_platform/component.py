@@ -921,6 +921,14 @@ class ComponentBMCObj(Component):
         self.bmc = BMC.get_instance()
         self.name = name
         self.type_name = ''
+        self.fw_id = attrs.get('id', '')
+        self.eeprom_id = attrs.get('eeprom_id', None)
+
+    def get_firmware_id(self):
+        return self.fw_id
+
+    def get_eeprom_id(self):
+        return self.eeprom_id
 
     def install_firmware(self, image_path):
         if not self._check_file_validity(image_path):
