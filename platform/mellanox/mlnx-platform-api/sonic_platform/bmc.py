@@ -30,6 +30,7 @@ try:
     import os
     import subprocess
     import filelock
+    from sonic_platform.component import ComponentBMC
     from sonic_platform_base.bmc_base import BMCBase
     from sonic_py_common import device_info
     from sonic_py_common.logger import Logger
@@ -213,80 +214,13 @@ class BMC(BMCBase):
         return True
 
     def _get_eeprom_id(self):
-        return self._get_component_attr('BMC', 'eeprom_id')
+        return 'BMC_eeprom'
     
     def _get_id(self):
-        return self._get_component_attr('BMC', 'id')
+        return 'MGX_FW_BMC_0'
     
-    def _get_component_attr(self, component_name, attr_name):
-        try:
-            platform_path = device_info.get_path_to_platform_dir()
-            platform_components_json_path = \
-                os.path.join(platform_path, 'platform_components.json')
-            comp_data = utils.load_json_file(platform_components_json_path)
-            if not comp_data or len(comp_data.get('chassis', {})) == 0:
-                return None
-            
-            chassis_data = comp_data['chassis']
-            components = None
-            for platform_name, platform_data in chassis_data.items():
-                if 'component' in platform_data:
-                    components = platform_data['component']
-                    break
-            if components is None:
-                return None
-                
-            attrs = components.get(component_name, {})
-            if attrs:
-                return attrs.get(attr_name, None)
-            return None
-        except Exception as e:
-            logger.log_error(f'Error getting component attribute {attr_name} for {component_name}: {str(e)}')
-            return None
-
     def _get_component_list(self):
-        platform_path = device_info.get_path_to_platform_dir()
-        platform_components_json_path = \
-            os.path.join(platform_path, 'platform_components.json')
-        comp_data = utils.load_json_file(platform_components_json_path)
-
-        if not comp_data or len(comp_data.get('chassis', {})) == 0:
-            return []
-
-        chassis_data = comp_data['chassis']
-        components = None
-        for platform_name, platform_data in chassis_data.items():
-            if 'component' in platform_data:
-                components = platform_data['component']
-                break
-        if components is None:
-            return []
-
-        comp_list = []
-        for comp_name, attrs in components.items():
-            managed_by = attrs.get('managed_by', '')
-            if managed_by.upper() != 'BMC':
-                continue
-
-            comp_cls = attrs.get('class', '')
-            if len(comp_cls) == 0:
-                logger.log_error(f"Missing 'class' for component {comp_name} in platform_components.json")
-                continue
-
-            comp = None
-            from . import component as module
-            try:
-                cls = getattr(module, comp_cls)
-                if cls is None:
-                    logger.log_error(f"Bad value 'class {comp_cls}' for component {comp_name} in platform_components.json")
-                    continue
-
-                comp = cls(comp_name, attrs)
-            except:
-                continue
-            comp_list.append(comp)
-
-        return comp_list
+        return [ComponentBMC()]
 
     def _login(self):
         logger.log_notice(f'Try login to BMC using the NOS account')
@@ -362,9 +296,6 @@ class BMC(BMCBase):
         if force_update == False and ret == RedfishClient.ERR_CODE_IDENTICAL_VERSION:
             logger.log_notice(f'Firmware image version is identical to the current version')
         if msg:
-            # Replace BMC internal firmware id with component display name in the message
-            for comp in self._get_component_list():
-                msg = msg.replace(comp.get_firmware_id(), comp.get_name())
             logger.log_notice(f'{msg}')
         return (ret, msg)
 
@@ -462,5 +393,6 @@ class BMC(BMCBase):
             logger.log_notice(f'Try to update BMC firmware with force_update for downgrade')
             ret, msg = self._update_components_firmware(fw_image, fw_ids=[fw_id], force_update=True)
         elif ret == RedfishClient.ERR_CODE_IDENTICAL_VERSION:
-            ret = RedfishClient.ERR_CODE_OK
+            logger.log_notice(f'Try to update BMC firmware with force_update for installing identical version')
+            ret, msg = self._update_components_firmware(fw_image, fw_ids=[fw_id], force_update=True)
         return (ret, msg)

@@ -39,7 +39,6 @@ from sonic_platform.component import ComponentONIE,       \
                                      ComponenetFPGADPU,   \
                                      MPFAManager,         \
                                      ONIEUpdater,         \
-                                     ComponentBMCObj,     \
                                      ComponentBMC,        \
                                      Component
 from sonic_platform.bmc import BMC

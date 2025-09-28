@@ -915,24 +915,29 @@ class ComponentCPLDSN2201(ComponentCPLD):
         return True
 
 
-class ComponentBMCObj(Component):
+class ComponentBMC(Component):
+    COMPONENT_NAME = 'BMC'
+    COMPONENT_DESCRIPTION = 'BMC - Baseboard Management Controller'
+    COMPONENT_FIRMWARE_EXTENSION = ['.fwpkg']
 
-    def __init__(self, name, attrs):
-        super(Component, self).__init__()
+    def __init__(self):
+        super(ComponentBMC, self).__init__()
 
         from .bmc import BMC
-
         self.bmc = BMC.get_instance()
-        self.name = name
-        self.type_name = ''
-        self.fw_id = attrs.get('id', '')
-        self.eeprom_id = attrs.get('eeprom_id', None)
 
-    def get_firmware_id(self):
-        return self.fw_id
-
-    def get_eeprom_id(self):
-        return self.eeprom_id
+        self.name = self.COMPONENT_NAME
+        self.description = self.COMPONENT_DESCRIPTION
+        self.image_ext_name = self.COMPONENT_FIRMWARE_EXTENSION
+    
+    def get_firmware_version(self):
+        return self.bmc.get_version()
+    
+    def get_available_firmware_version(self, image_path):
+        raise NotImplementedError("BMC component doesn't support available firmware version query")
+    
+    def get_firmware_update_notification(self, image_path):
+        return "BMC will be automatically restarted to complete BMC firmware update"
 
     def install_firmware(self, image_path):
         if not self._check_file_validity(image_path):
@@ -958,21 +963,9 @@ class ComponentBMCObj(Component):
             print(error_trace)
             raise
 
-    def get_firmware_version(self):
-        return self.bmc.get_version()
+    def update_firmware(self, image_path):
+        return self.install_firmware(image_path)
 
-
-class ComponentBMC(ComponentBMCObj):
-    COMPONENT_NAME = 'BMC'
-    COMPONENT_DESCRIPTION = 'BMC - Baseboard Management Controller'
-    COMPONENT_FIRMWARE_EXTENSION = ['.fwpkg']
-
-    def __init__(self, name, attrs):
-        super(ComponentBMC, self).__init__(name, attrs)
-
-        self.type_name = self.COMPONENT_NAME
-        self.description = self.COMPONENT_DESCRIPTION
-        self.image_ext_name = self.COMPONENT_FIRMWARE_EXTENSION
 
 class ComponentCPLDSN4280(ComponentCPLD):
     CPLD_FIRMWARE_UPDATE_COMMAND = ['cpldupdate', '--gpio', '--print-progress', '']

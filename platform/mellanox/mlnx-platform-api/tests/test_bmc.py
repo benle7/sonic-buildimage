@@ -66,19 +66,16 @@ class TestBMC:
     @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
     @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
-    @mock.patch('sonic_platform.bmc.BMC._get_component_attr')
     @mock.patch('sonic_platform.bmc.BMC._get_firmware_version')
-    def test_bmc_get_version(self, mock_get_firmware_version, mock_get_component_attr):
+    def test_bmc_get_version(self, mock_get_firmware_version):
         """Test get_version method with successful version retrieval"""
         expected_version = '88.0002.1252'
-        mock_get_component_attr.return_value = 'MGX_FW_BMC_0'
         mock_get_firmware_version.return_value = (RedfishClient.ERR_CODE_OK, expected_version)
 
         bmc = BMC.get_instance()
         result = bmc.get_version()
 
         assert result == expected_version
-        mock_get_component_attr.assert_called_once_with('BMC', 'id')
         mock_get_firmware_version.assert_called_once_with('MGX_FW_BMC_0')
 
     @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
