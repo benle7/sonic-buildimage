@@ -87,22 +87,14 @@ def with_credential_restore(api_func):
     def wrapper(self, *args, **kwargs):
         if self.rf_client is None:
             raise Exception('Redfish instance initialization failure')
-
         if not self.rf_client.has_login():
             self._login()
-        elif api_func.__name__ == 'update_firmware':
-            # Create new token before running update_firmware API
-            self._logout()
-            self._login()
-
         ret, data = api_func(self, *args, **kwargs)
         if ret == RedfishClient.ERR_CODE_AUTH_FAILURE:
-            # Trigger credential restore flow
             logger.log_notice(f'{api_func.__name__}() returns bad credential. ' \
                               'Trigger BMC TPM based password recovery flow')
             restored = self._restore_tpm_credential()
             if restored:
-                # Execute again
                 logger.log_notice(f'BMC TPM based password recovered. Retry {api_func.__name__}()')
                 ret, data = api_func(self, *args, **kwargs)
             else:
@@ -126,8 +118,6 @@ class BMC(BMCBase):
     BMC_NOS_ACCOUNT_DEFAULT_PASSWORD = "ABYX12#14artb51"
     ROOT_ACCOUNT = 'root'
     ROOT_ACCOUNT_DEFAULT_PASSWORD = '0penBmcTempPass!'
-    BMC_DIR = "/host/bmc"
-    MAX_LOGIN_ERROR_PROBE_CNT = 5
 
     _instance = None
 
@@ -135,7 +125,6 @@ class BMC(BMCBase):
 
         self.addr = addr
         self.using_tpm_password = True
-        self.probe_cnt = 0
 
         self.rf_client = RedfishClient(BMC.CURL_PATH,
                                         addr,
@@ -155,7 +144,6 @@ class BMC(BMCBase):
     def _get_ip_addr(self):
         return self.addr
 
-    # Password callback function passed to RedfishClient
     def _get_password_callback(self):
         if self.using_tpm_password:
             return self._get_login_password()
@@ -172,33 +160,28 @@ class BMC(BMCBase):
     @under_lock(lockfile='/var/run/bmc_restore_tpm_credential.lock', timeout=5)
     def _restore_tpm_credential(self):
         logger.log_notice(f'Start BMC TPM password recovery flow')
-
         # We are not good with TPM password here, Try to login with default password
         logger.log_notice(f'Try to login with BMC default password')
         # Indicate password callback function to switch to default password temporarily
         self.using_tpm_password = False
         ret = self.rf_client.login()
-
         if ret != RedfishClient.ERR_CODE_OK:
             logger.log_error(f'Bad credential: Fail to login BMC with both TPM based and default passwords')
-            if self.probe_cnt < BMC.MAX_LOGIN_ERROR_PROBE_CNT:
-                # Log the exact failure reason since the login API does not return anything
-                # Trigger a GET request using user/password instead of token, then BMC will report the failure details
-                self.rf_client.probe_login_error()
-                self.probe_cnt += 1
+            # Log the exact failure reason since the login API does not return anything
+            # Trigger a GET request using user/password instead of token, then BMC will report the failure details
+            self.rf_client.probe_login_error()
             # Resume to TPM password
             self.using_tpm_password = True
             return False
 
         # Indicate RedfishClient to switch to TPM password
         self.using_tpm_password = True
-
         logger.log_notice(f'Login successfully with BMC default password')
         try:
             password = self._get_login_password()
         except Exception as e:
             self.rf_client.invalidate_login_token()
-            logger.log_error(f'Fail to get login password from TPM: {str(e)}')
+            logger.log_error(f'Fail to get TPM password: {str(e)}')
             return False
 
         # Apply TPM password to NOS account.
@@ -249,7 +232,6 @@ class BMC(BMCBase):
     def _change_login_password(self, password, user=None):
         if self.rf_client is None:
             return (RedfishClient.ERR_CODE_AUTH_FAILURE, "")
-
         return self.rf_client.redfish_api_change_login_password(password, user)
     
     def _is_bmc_eeprom_content_valid(self, eeprom_info):
