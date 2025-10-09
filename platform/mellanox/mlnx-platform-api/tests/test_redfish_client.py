@@ -1,31 +1,22 @@
 import os
 import pytest
 import sys
-import subprocess
 import json
+
 
 if sys.version_info.major == 3:
     from unittest import mock
 else:
     import mock
 
+
 test_path = os.path.dirname(os.path.abspath(__file__))
 modules_path = os.path.dirname(test_path)
 sys.path.insert(0, modules_path)
 
-from sonic_platform.redfish_client import RedfishClient
 
+from sonic_platform_base.redfish_client import RedfishClient
 
-def mock_logger():
-    mock_obj = mock.Mock()
-    mock_obj.log_error = mock.Mock()
-    mock_obj.log_warning = mock.Mock()
-    mock_obj.log_notice = mock.Mock()
-    mock_obj.log_info = mock.Mock()
-    mock_obj.log_debug = mock.Mock()
-    return mock_obj
-
-logger = mock_logger()
 
 def load_redfish_response(fname):
     if not fname:
@@ -42,6 +33,9 @@ class TestRedfishClient:
     BMC_INTERNAL_IP_ADDR = '169.254.0.1'
     BMC_NOS_ACCOUNT = 'yormnAnb'
     BMC_NOS_ACCOUNT_DEFAULT_PASSWORD = "ABYX12#14artb51"
+
+    def user_callback(self):
+        return TestRedfishClient.BMC_NOS_ACCOUNT
 
     def password_callback(self):
         return TestRedfishClient.BMC_NOS_ACCOUNT_DEFAULT_PASSWORD
@@ -61,9 +55,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK
@@ -80,9 +73,8 @@ class TestRedfishClient:
         mock_popen.return_value.returncode = 0
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_AUTH_FAILURE
@@ -103,9 +95,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK
@@ -132,9 +123,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK
@@ -158,9 +148,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK
@@ -185,9 +174,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK
@@ -211,9 +199,8 @@ class TestRedfishClient:
         mock_popen.side_effect = side_effects
         rf = RedfishClient(TestRedfishClient.CURL_PATH,
                            TestRedfishClient.BMC_INTERNAL_IP_ADDR,
-                           TestRedfishClient.BMC_NOS_ACCOUNT,
-                           self.password_callback,
-                           logger)
+                           self.user_callback,
+                           self.password_callback)
 
         ret = rf.login()
         assert ret == RedfishClient.ERR_CODE_OK

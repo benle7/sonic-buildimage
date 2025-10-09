@@ -922,10 +922,8 @@ class ComponentBMC(Component):
 
     def __init__(self):
         super(ComponentBMC, self).__init__()
-
         from .bmc import BMC
         self.bmc = BMC.get_instance()
-
         self.name = self.COMPONENT_NAME
         self.description = self.COMPONENT_DESCRIPTION
         self.image_ext_name = self.COMPONENT_FIRMWARE_EXTENSION
@@ -944,8 +942,6 @@ class ComponentBMC(Component):
             print(f"Invalid firmware image path: {image_path}")
             return False
         print('Starting BMC firmware update, path={}'.format(image_path))
-        ret = 0
-        error_msg = ''
         try:
             ret, error_msg = self.bmc.update_firmware(image_path)
             if ret != 0:

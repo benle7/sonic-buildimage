@@ -29,7 +29,8 @@ modules_path = os.path.dirname(test_path)
 sys.path.insert(0, modules_path)
 
 from sonic_platform.bmc import BMC
-from sonic_platform.redfish_client import RedfishClient
+from sonic_platform_base.bmc_base import BMCBase
+from sonic_platform_base.redfish_client import RedfishClient
 
 
 class MockBMCComponent:
@@ -41,31 +42,28 @@ class MockBMCComponent:
 
 
 class TestBMC:
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
-    @mock.patch('sonic_platform.bmc.BMC._get_eeprom_id')
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.bmc.BMC._get_eeprom_info')
-    def test_bmc_get_eeprom(self, mock_get_eeprom_info, mock_get_eeprom_id):
+    def test_bmc_get_eeprom(self, mock_get_eeprom_info):
         """Test get_eeprom method with successful EEPROM retrieval"""
         eeprom_dict_file_path = os.path.join(test_path, 'mock_parsed_bmc_eeprom_dict')
         with open(eeprom_dict_file_path, 'r') as f:
             data = f.read()
             expected_eeprom_data = json.loads(data)
         
-        mock_get_eeprom_id.return_value = 'BMC_eeprom'
         mock_get_eeprom_info.return_value = (RedfishClient.ERR_CODE_OK, expected_eeprom_data)
 
         bmc = BMC.get_instance()
         result = bmc.get_eeprom()
 
         assert result == expected_eeprom_data
-        mock_get_eeprom_id.assert_called_once()
-        mock_get_eeprom_info.assert_called_once_with('BMC_eeprom')
+        mock_get_eeprom_info.assert_called_once_with(BMCBase.BMC_EEPROM_ID)
 
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.bmc.BMC._get_firmware_version')
     def test_bmc_get_version(self, mock_get_firmware_version):
         """Test get_version method with successful version retrieval"""
@@ -76,11 +74,11 @@ class TestBMC:
         result = bmc.get_version()
 
         assert result == expected_version
-        mock_get_firmware_version.assert_called_once_with('MGX_FW_BMC_0')
+        mock_get_firmware_version.assert_called_once_with(BMCBase.BMC_FIRMWARE_ID)
 
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.bmc.BMC._login')
     @mock.patch('sonic_platform.bmc.BMC._change_login_password')
     @mock.patch('sonic_platform.bmc.BMC._logout')
@@ -96,13 +94,13 @@ class TestBMC:
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Password changed successfully'
         mock_login.assert_called_once()
-        mock_change_password.assert_called_once_with(BMC.ROOT_ACCOUNT_DEFAULT_PASSWORD, BMC.ROOT_ACCOUNT)
+        mock_change_password.assert_called_once_with(BMCBase.ROOT_ACCOUNT_DEFAULT_PASSWORD, BMCBase.ROOT_ACCOUNT)
         mock_logout.assert_called_once()
 
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
-    @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_trigger_bmc_debug_log_dump')
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
+    @mock.patch('sonic_platform_base.redfish_client.RedfishClient.redfish_api_trigger_bmc_debug_log_dump')
     def test_bmc_trigger_bmc_debug_log_dump(self, mock_trigger_debug_log_dump):
 
         expected_msg = 'Success'
@@ -116,10 +114,10 @@ class TestBMC:
         assert msg == expected_msg
         assert task_id == ret_task_id
 
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
-    @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_get_bmc_debug_log_dump')
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
+    @mock.patch('sonic_platform_base.redfish_client.RedfishClient.redfish_api_get_bmc_debug_log_dump')
     def test_bmc_get_bmc_debug_log_dump(self, mock_get_debug_log_dump):
 
         expected_msg = 'Success'
@@ -133,23 +131,19 @@ class TestBMC:
 
     @mock.patch('sonic_platform.bmc.BMC._get_component_list', \
         mock.MagicMock(return_value=[MockBMCComponent()]))
-    @mock.patch('sonic_platform.bmc.device_info.get_bmc_data', \
+    @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
-    @mock.patch('sonic_platform.bmc.BMC._get_login_password', mock.MagicMock(return_value=''))
+    @mock.patch('sonic_platform.bmc.BMC._get_tpm_password', mock.MagicMock(return_value=''))
     @mock.patch('sonic_platform.component.ComponentBMC._check_file_validity', \
                 mock.MagicMock(return_value=True))
-    @mock.patch('sonic_platform.bmc.BMC._get_id')
-    @mock.patch('sonic_platform.redfish_client.RedfishClient.redfish_api_update_firmware')
-    @mock.patch('sonic_platform.redfish_client.RedfishClient.login')
-    def test_bmc_update_firmware(self, mock_login, mock_update_fw, mock_get_id):
+    @mock.patch('sonic_platform_base.redfish_client.RedfishClient.redfish_api_update_firmware')
+    def test_bmc_update_firmware(self, mock_update_fw):
         """Test update_firmware method with successful update without force"""
-        mock_login.return_value = RedfishClient.ERR_CODE_OK
         mock_update_fw.return_value = (RedfishClient.ERR_CODE_OK, 'Update successful')
-        mock_get_id.return_value = 'MGX_FW_BMC_0'
 
         bmc = BMC.get_instance()
         ret, msg = bmc.update_firmware('fake_image.fwpkg')
 
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Update successful'
-        mock_update_fw.assert_called_once_with('fake_image.fwpkg', ['MGX_FW_BMC_0'], False, 1800, None)
+        mock_update_fw.assert_called_once_with('fake_image.fwpkg', fw_ids=[BMCBase.BMC_FIRMWARE_ID])
