@@ -58,6 +58,7 @@ def under_lock(lockfile, timeout=2):
 
 
 def _get_hw_mgmt_redfish_client():
+    """ Get hw_management_redfish_client module. """
     if HW_MGMT_REDFISH_CLIENT_NAME in sys.modules:
         return sys.modules[HW_MGMT_REDFISH_CLIENT_NAME]
     if not os.path.exists(HW_MGMT_REDFISH_CLIENT_PATH):
@@ -69,30 +70,6 @@ def _get_hw_mgmt_redfish_client():
     return hw_mgmt_redfish_client
 
 
-def with_credential_restore(api_func):
-    @wraps(api_func)
-    def wrapper(self, *args, **kwargs):
-        if self.rf_client is None:
-            raise Exception('Redfish instance initialization failure')
-        if not self.rf_client.has_login():
-            self._login()
-        ret, data = api_func(self, *args, **kwargs)
-        if ret == RedfishClient.ERR_CODE_AUTH_FAILURE:
-            logger.log_notice(f'{api_func.__name__}() returns bad credential. ' \
-                              'Trigger BMC TPM based password recovery flow')
-            restored = self._restore_tpm_credential()
-            if restored:
-                logger.log_notice(f'BMC TPM based password recovered. Retry {api_func.__name__}()')
-                ret, data = api_func(self, *args, **kwargs)
-            else:
-                self._logout()
-                logger.log_notice(f'Fail to recover BMC based password')
-                return (RedfishClient.ERR_CODE_AUTH_FAILURE, data)
-        self._logout()
-        return (ret, data)
-    return wrapper
-
-
 class BMC(BMCBase):
 
     """
@@ -100,8 +77,11 @@ class BMC(BMCBase):
     It also acts as wrapper of RedfishClient.
     """
 
+    BMC_FIRMWARE_ID = 'MGX_FW_BMC_0'
+    BMC_EEPROM_ID = 'BMC_eeprom'
     BMC_NOS_ACCOUNT = 'yormnAnb'
     BMC_NOS_ACCOUNT_DEFAULT_PASSWORD = "ABYX12#14artb51"
+    ROOT_ACCOUNT_DEFAULT_PASSWORD = '0penBmcTempPass!'
 
     _instance = None
 
@@ -127,6 +107,15 @@ class BMC(BMCBase):
             return self._get_tpm_password()
         else:
             return BMC.BMC_NOS_ACCOUNT_DEFAULT_PASSWORD
+    
+    def _get_default_root_password(self):
+        return BMC.ROOT_ACCOUNT_DEFAULT_PASSWORD
+    
+    def _get_firmware_id(self):
+        return BMC.BMC_FIRMWARE_ID
+    
+    def _get_eeprom_id(self):
+        return BMC.BMC_EEPROM_ID
 
     def _get_tpm_password(self):
         try:
@@ -174,6 +163,9 @@ class BMC(BMCBase):
         return [ComponentBMC()]
 
     def _login(self):
+        """
+        Override BMCBase _login to implement TPM password recovery flow.
+        """
         logger.log_notice(f'Try login to BMC using the NOS account')
         if self.rf_client.has_login():
             return RedfishClient.ERR_CODE_OK
@@ -184,48 +176,29 @@ class BMC(BMCBase):
             if restored:
                 ret = RedfishClient.ERR_CODE_OK
         elif ret == RedfishClient.ERR_CODE_PASSWORD_UNAVAILABLE:
-            logger.log_notice(f'Fail to generate TPM password')
+            logger.log_notice(f'Fail to get TPM password')
         return ret
-    
-    def _logout(self):
-        if self.rf_client.has_login():
-            return self.rf_client.logout()
-        return RedfishClient.ERR_CODE_OK
-    
-    @with_credential_restore
-    def _request_bmc_reset(self, graceful=True):
-        return super()._request_bmc_reset(graceful)
 
-    @with_credential_restore
-    def _get_firmware_version(self, fw_id):
-        return super()._get_firmware_version(fw_id)
-
-    @with_credential_restore
-    def _get_eeprom_info(self, eeprom_id):
-        return super()._get_eeprom_info(eeprom_id)
-    
-    @with_credential_restore
-    def update_firmware(self, fw_image):
-        return super().update_firmware(fw_image)
-    
-    @with_credential_restore
-    def trigger_bmc_debug_log_dump(self):
-        return super().trigger_bmc_debug_log_dump()
-
-    @with_credential_restore
-    def get_bmc_debug_log_dump(self, task_id, filename, path, timeout = 120):
-        return super().get_bmc_debug_log_dump(task_id, filename, path, timeout)
+    def _change_login_password(self, password, user=None):
+        """
+        Override BMCBase _change_login_password because we do not want use @with_session_management
+        which calls _login and _restore_tpm_credential, in order to prevent infinite loop.
+        """
+        return self.rf_client.redfish_api_change_login_password(password, user)
     
     def reset_root_password(self):
-        '''
-        There is no with_credential_restore wrapper here
-        for preventing infinite loop with _change_login_password
-        '''
+        """
+        Override BMCBase reset_root_password because we need to call _login and _logout explicitly
+        since we override _change_login_password without @with_session_management.
+        """
         try:
             self._login()
+            # Call BMCBase reset_root_password which calls _change_login_password
             (ret, msg) = super().reset_root_password()
             self._logout()
             return (ret, msg)
         except Exception as e:
             logger.log_error(f'Failed to reset BMC root password: {str(e)}')
+            self._logout()
+            logger.log_notice(f'Logged out from BMC in exception handler of reset_root_password')
             return (RedfishClient.ERR_CODE_AUTH_FAILURE, str(e))

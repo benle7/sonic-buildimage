@@ -584,7 +584,7 @@ class TestComponent:
     @mock.patch('sonic_platform.component.ComponentBMC._check_file_validity', \
                 mock.MagicMock(return_value=True))
     @mock.patch('sonic_platform.bmc.BMC.update_firmware')
-    @mock.patch('sonic_platform.bmc.BMC._request_bmc_reset')
+    @mock.patch('sonic_platform.bmc.BMC.request_bmc_reset')
     def test_bmc_update_firmware(self, mock_bmc_reset, mock_update_fw):
         mock_update_fw.return_value = (RedfishClient.ERR_CODE_OK, '')
         mock_bmc_reset.return_value = (RedfishClient.ERR_CODE_OK, '')

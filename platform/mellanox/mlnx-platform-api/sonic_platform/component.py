@@ -948,7 +948,7 @@ class ComponentBMC(Component):
                 print(f'Fail to update BMC firmware. Error {ret}: {error_msg}')
                 return False
             print('Successfully updated BMC firmware, restarting BMC...')
-            ret, error_msg = self.bmc._request_bmc_reset()
+            ret, error_msg = self.bmc.request_bmc_reset()
             if ret != 0:
                 print(f'Failed to restart BMC. Error {ret}: {error_msg}')
                 return False

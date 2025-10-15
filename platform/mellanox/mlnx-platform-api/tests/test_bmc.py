@@ -59,7 +59,7 @@ class TestBMC:
         result = bmc.get_eeprom()
 
         assert result == expected_eeprom_data
-        mock_get_eeprom_info.assert_called_once_with(BMCBase.BMC_EEPROM_ID)
+        mock_get_eeprom_info.assert_called_once_with(BMC.BMC_EEPROM_ID)
 
     @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
@@ -74,7 +74,7 @@ class TestBMC:
         result = bmc.get_version()
 
         assert result == expected_version
-        mock_get_firmware_version.assert_called_once_with(BMCBase.BMC_FIRMWARE_ID)
+        mock_get_firmware_version.assert_called_once_with(BMC.BMC_FIRMWARE_ID)
 
     @mock.patch('sonic_py_common.device_info.get_bmc_data', \
                 mock.MagicMock(return_value={'bmc_addr': '169.254.0.1'}))
@@ -94,7 +94,7 @@ class TestBMC:
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Password changed successfully'
         mock_login.assert_called_once()
-        mock_change_password.assert_called_once_with(BMCBase.ROOT_ACCOUNT_DEFAULT_PASSWORD, BMCBase.ROOT_ACCOUNT)
+        mock_change_password.assert_called_once_with(BMC.ROOT_ACCOUNT_DEFAULT_PASSWORD, BMCBase.ROOT_ACCOUNT)
         mock_logout.assert_called_once()
 
     @mock.patch('sonic_py_common.device_info.get_bmc_data', \
@@ -146,4 +146,4 @@ class TestBMC:
 
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Update successful'
-        mock_update_fw.assert_called_once_with('fake_image.fwpkg', fw_ids=[BMCBase.BMC_FIRMWARE_ID])
+        mock_update_fw.assert_called_once_with('fake_image.fwpkg', fw_ids=[BMC.BMC_FIRMWARE_ID])
