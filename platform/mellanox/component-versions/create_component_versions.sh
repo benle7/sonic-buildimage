@@ -21,9 +21,9 @@ echo "SAI $3" >> temp_versions_file
 
 SAI_API_VERSION_PATH="../../../src/sonic-sairedis/SAI/inc/saiversion.h"
 if [ -f "$SAI_API_VERSION_PATH" ]; then
-    SAI_MAJOR=$(grep "SAI_MAJOR" "$SAI_API_VERSION_PATH" | grep -o "[0-9]*")
-    SAI_MINOR=$(grep "SAI_MINOR" "$SAI_API_VERSION_PATH" | grep -o "[0-9]*")
-    SAI_REVISION=$(grep "SAI_REVISION" "$SAI_API_VERSION_PATH" | grep -o "[0-9]*")
+    SAI_MAJOR=$(grep "SAI_MAJOR" "$SAI_API_VERSION_PATH" | grep -oE "[0-9]+")
+    SAI_MINOR=$(grep "SAI_MINOR" "$SAI_API_VERSION_PATH" | grep -oE "[0-9]+")
+    SAI_REVISION=$(grep "SAI_REVISION" "$SAI_API_VERSION_PATH" | grep -oE "[0-9]+")
     if [ -n "$SAI_MAJOR" ] && [ -n "$SAI_MINOR" ] && [ -n "$SAI_REVISION" ]; then
         echo "SAI_API_HEADERS $SAI_MAJOR.$SAI_MINOR.$SAI_REVISION" >> temp_versions_file
     else
