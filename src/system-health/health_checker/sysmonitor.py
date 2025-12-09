@@ -454,6 +454,9 @@ class Sysmonitor(ProcessTaskBase):
                 astate = "DOWN"
             self.publish_system_status(astate)
 
+            if not event.endswith(".service"):
+                return 0
+
             srv_name,last = event.split('.')
             # stop on service maybe propagated to timers and in that case,
             # the state_db entry for the service should not be deleted
