@@ -1121,7 +1121,29 @@ class Chassis(ChassisBase):
         """
         return False
 
-    
+    def change_sed_password(self, new_password):
+        """
+        Change the SED (Self-Encrypting Drive) password for Mellanox platforms.
+
+        Args:
+            new_password (str): The new password to set for the SED
+
+        Returns:
+            bool: True if the password change process completed successfully, False otherwise
+        """
+        sed_script_path = '/usr/local/bin/sed_pw_change.sh'
+        if not os.path.exists(sed_script_path):
+            logger.log_error(f"SED script path {sed_script_path} does not exist")
+            return False
+        try:
+            import subprocess
+            subprocess.check_call([sed_script_path, '-p', new_password], universal_newlines=True)
+            return True
+        except Exception as e:
+            logger.log_error(f"Failed to change SED password: {e}")
+            return False
+
+
     ##############################################
     # LiquidCooling methods
     ##############################################
