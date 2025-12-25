@@ -22,6 +22,7 @@ SONIC_VERSION_YAML_PATH = "/etc/sonic/sonic_version.yml"
 PORT_CONFIG_FILE = "port_config.ini"
 PLATFORM_JSON_FILE = "platform.json"
 BMC_DATA_FILE = 'bmc.json'
+BMC_BUILD_CONFIG_FILE = '/etc/sonic/bmc_config.json'
 
 # Fabric port configuration file names
 FABRIC_MONITOR_CONFIG_FILE = "fabric_monitor_config.json"
@@ -993,6 +994,20 @@ def get_bmc_data():
             return None
     except Exception:
         return None
+
+
+def get_bmc_build_config():
+    """
+    Get BMC build-time configuration
+    
+    Returns:
+        A dictionary containing the BMC build configuration, or empty dict if not available
+    """
+    try:
+        with open(BMC_BUILD_CONFIG_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 
 # Check if System fast reboot is enabled.
