@@ -127,7 +127,7 @@ class TestBMC:
         mock_update_fw.return_value = (RedfishClient.ERR_CODE_OK, 'Update successful', [BMC.BMC_FIRMWARE_ID])
 
         bmc = BMC.get_instance()
-        ret, msg, updated_components = bmc.update_firmware('fake_image.fwpkg')
+        ret, (msg, updated_components) = bmc.update_firmware('fake_image.fwpkg')
 
         assert ret == RedfishClient.ERR_CODE_OK
         assert msg == 'Update successful'
