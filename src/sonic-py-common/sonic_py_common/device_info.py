@@ -988,10 +988,8 @@ def get_bmc_data():
         json_file = os.path.join(platform_path, BMC_DATA_FILE)
         if os.path.exists(json_file):
             with open(json_file, "r") as f:
-                bmc_data = json.load(f)
-            return bmc_data
-        else:
-            return None
+                return json.load(f)
+        return None
     except Exception:
         return None
 
@@ -1004,10 +1002,12 @@ def get_bmc_build_config():
         A dictionary containing the BMC build configuration, or empty dict if not available
     """
     try:
-        with open(BMC_BUILD_CONFIG_FILE, "r") as f:
-            return json.load(f)
+        if os.path.exists(BMC_BUILD_CONFIG_FILE):
+            with open(BMC_BUILD_CONFIG_FILE, "r") as f:
+                return json.load(f)
+        return None
     except Exception:
-        return {}
+        return None
 
 
 # Check if System fast reboot is enabled.

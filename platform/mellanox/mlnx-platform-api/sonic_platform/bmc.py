@@ -24,13 +24,10 @@
 
 
 try:
-    from functools import wraps
     import sys
     import importlib.util
     import os
-    import filelock
     from sonic_platform_base.bmc_base import BMCBase
-    from sonic_platform_base.redfish_client import RedfishClient
     from sonic_py_common.logger import Logger
 except ImportError as e:
     raise ImportError (str(e) + "- required module not found")
@@ -41,18 +38,6 @@ logger = Logger('bmc')
 
 HW_MGMT_REDFISH_CLIENT_PATH = '/usr/bin/hw_management_redfish_client.py'
 HW_MGMT_REDFISH_CLIENT_NAME = 'hw_management_redfish_client'
-
-
-def under_lock(lockfile, timeout=2):
-    """ Execute operations under lock. """
-    def _under_lock(func):
-        @wraps(func)
-        def wrapped_function(*args, **kwargs):
-            with filelock.FileLock(lockfile, timeout):
-                return func(*args, **kwargs)
-
-        return wrapped_function
-    return _under_lock
 
 
 def _get_hw_mgmt_redfish_client():
@@ -68,6 +53,32 @@ def _get_hw_mgmt_redfish_client():
     return hw_mgmt_redfish_client
 
 
+def _get_bmc_values():
+    none_values = None, None, None
+    from sonic_py_common import device_info
+    bmc_data = device_info.get_bmc_data()
+    if not bmc_data:
+        # BMC is not present on this platform - missing bmc.json
+        return none_values
+    bmc_addr = bmc_data.get('bmc_addr')
+    if not bmc_addr:
+        logger.log_error("BMC address not found in bmc_data")
+        return none_values
+    bmc_config = device_info.get_bmc_build_config()
+    if not bmc_config:
+        logger.log_error("BMC build configuration not found")
+        return none_values
+    bmc_nos_account_username = bmc_config.get('bmc_nos_account_username')
+    if not bmc_nos_account_username:
+        logger.log_error("BMC NOS account username not found in build configuration")
+        return none_values
+    bmc_root_account_default_password = bmc_config.get('bmc_root_account_default_password')
+    if not bmc_root_account_default_password:
+        logger.log_error("BMC root account default password not found in build configuration")
+        return none_values
+    return bmc_addr, bmc_nos_account_username, bmc_root_account_default_password
+
+
 class BMC(BMCBase):
 
     """
@@ -79,31 +90,18 @@ class BMC(BMCBase):
     BMC_EEPROM_ID = 'BMC_eeprom'
     _instance = None
 
-    def __init__(self, addr, bmc_nos_account_username):
+    def __init__(self, addr, bmc_nos_account_username, bmc_root_account_default_password):
         super().__init__(addr)
         self._bmc_nos_account_username = bmc_nos_account_username
+        self._bmc_root_account_default_password = bmc_root_account_default_password
 
     @staticmethod
     def get_instance():
         if BMC._instance is None:
-            from sonic_py_common import device_info
-            bmc_data = device_info.get_bmc_data()
-            if not bmc_data:
-                # BMC is not present on this platform - missing bmc.json
+            bmc_addr, bmc_nos_account_username, bmc_root_account_default_password = _get_bmc_values()
+            if not bmc_addr or not bmc_nos_account_username or not bmc_root_account_default_password:
                 return None
-            bmc_addr = bmc_data.get('bmc_addr')
-            if not bmc_addr:
-                logger.log_error("BMC address not found in bmc_data")
-                return None
-            bmc_config = device_info.get_bmc_build_config()
-            if not bmc_config:
-                logger.log_error("BMC build configuration not found")
-                return None
-            bmc_nos_account_username = bmc_config.get('bmc_nos_account_username')
-            if not bmc_nos_account_username:
-                logger.log_error("BMC NOS account username not found in build configuration")
-                return None
-            BMC._instance = BMC(bmc_addr, bmc_nos_account_username)
+            BMC._instance = BMC(bmc_addr, bmc_nos_account_username, bmc_root_account_default_password)
         return BMC._instance
 
     def _get_login_user_callback(self):
@@ -111,6 +109,9 @@ class BMC(BMCBase):
 
     def _get_login_password_callback(self):
         return self._get_tpm_password()
+
+    def _get_default_root_password(self):
+        return self._bmc_root_account_default_password
 
     def get_firmware_id(self):
         return BMC.BMC_FIRMWARE_ID
