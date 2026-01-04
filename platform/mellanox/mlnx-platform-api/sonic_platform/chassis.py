@@ -1137,7 +1137,10 @@ class Chassis(ChassisBase):
             return False
         try:
             import subprocess
-            subprocess.check_call([sed_script_path, '-p', new_password], universal_newlines=True)
+            subprocess.check_call([sed_script_path, '-p', new_password], 
+                                 universal_newlines=True, 
+                                 stdout=subprocess.DEVNULL, 
+                                 stderr=subprocess.PIPE)
             return True
         except Exception as e:
             logger.log_error(f"Failed to change SED password: {e}")
@@ -1156,7 +1159,10 @@ class Chassis(ChassisBase):
             return False
         try:
             import subprocess
-            subprocess.check_call([sed_script_path], universal_newlines=True)
+            subprocess.check_call([sed_script_path], 
+                                 universal_newlines=True, 
+                                 stdout=subprocess.DEVNULL, 
+                                 stderr=subprocess.PIPE)
             return True
         except Exception as e:
             logger.log_error(f"Failed to reset SED password: {e}")
