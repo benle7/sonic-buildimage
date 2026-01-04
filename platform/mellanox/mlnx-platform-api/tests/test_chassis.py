@@ -443,7 +443,9 @@ class TestChassis:
         mock_exists.assert_called_once_with(sed_script_path)
         mock_subprocess.assert_called_once_with(
             [sed_script_path, '-p', 'new_password123'], 
-            universal_newlines=True
+            universal_newlines=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE
         )
         mock_logger.log_error.assert_not_called()
 
@@ -474,7 +476,9 @@ class TestChassis:
         mock_exists.assert_called_once_with(sed_script_path)
         mock_subprocess.assert_called_once_with(
             [sed_script_path, '-p', 'new_password123'], 
-            universal_newlines=True
+            universal_newlines=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE
         )
         mock_logger.log_error.assert_called_once()
         assert "Failed to change SED password" in str(mock_logger.log_error.call_args)
@@ -493,7 +497,9 @@ class TestChassis:
         mock_exists.assert_called_once_with(sed_script_path)
         mock_subprocess.assert_called_once_with(
             [sed_script_path], 
-            universal_newlines=True
+            universal_newlines=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE
         )
         mock_logger.log_error.assert_not_called()
 
@@ -524,7 +530,9 @@ class TestChassis:
         mock_exists.assert_called_once_with(sed_script_path)
         mock_subprocess.assert_called_once_with(
             [sed_script_path], 
-            universal_newlines=True
+            universal_newlines=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE
         )
         mock_logger.log_error.assert_called_once()
         assert "Failed to reset SED password" in str(mock_logger.log_error.call_args)
