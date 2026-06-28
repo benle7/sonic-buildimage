@@ -1008,6 +1008,10 @@ class ComponentBMC(Component):
         Returns:
             A boolean, True if the BMC firmware is installed successfully, False otherwise.
         """
+        from sonic_py_common import device_info
+        if device_info.get_bmc_os() == device_info.BMC_OS_SONIC:
+            print('BMC firmware install not supported when BMC OS is sonic')
+            return False
         if not self._check_file_validity(image_path):
             print(f"Invalid firmware image path: {image_path}")
             return False
